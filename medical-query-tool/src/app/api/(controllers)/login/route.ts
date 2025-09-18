@@ -41,3 +41,9 @@
 //     );
 //   }
 // }
+
+
+// This function is for testing purposes.
+export async function GET() {
+    return Response.json({message: 'Hello World'});
+}
