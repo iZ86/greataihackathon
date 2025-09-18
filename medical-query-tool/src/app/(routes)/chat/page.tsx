@@ -20,7 +20,7 @@ export default function Chat() {
                 Ask me anything about your documents
               </h2>
               <p className="text-gray-500 dark:text-gray-400 mt-2">
-                I&aptos;m here to help you understand your medical records.
+                I&apos;m here to help you understand your medical records.
               </p>
             </div>
 
@@ -32,7 +32,7 @@ export default function Chat() {
                 </p>
                 <div className="rounded-lg bg-gray-200/50 dark:bg-gray-800/50 p-4 text-gray-800 dark:text-gray-200 max-w-lg">
                   <p>
-                    Hi there! I&aptos;m here to help you understand your medical
+                    Hi there! I&apos;m here to help you understand your medical
                     documents. What would you like to know?
                   </p>
                 </div>
