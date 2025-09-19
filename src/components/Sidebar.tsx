@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react"; // hamburger & close icons
+import { useAuthenticator } from "@aws-amplify/ui-react";
 
 export default function Sidebar({ page }: { page: string }) {
   const [isOpen, setIsOpen] = useState(false);
+  const {user, signOut} = useAuthenticator((context) => [context.user]);
 
   return (
     <>
@@ -80,6 +82,19 @@ export default function Sidebar({ page }: { page: string }) {
           >
             Settings
           </Link>
+          
+          <Link 
+            href="/login"
+            className={`${
+              page === "settings"
+                ? "text-indigo-600 font-bold"
+                : "text-gray-700 dark:text-gray-300"
+            } hover:text-indigo-500 hover:bg-gray-900 p-4`}
+            onClick={signOut}
+            >
+              Sign out
+          </Link>
+
         </nav>
       </aside>
     </>
