@@ -59,15 +59,15 @@ export default function Sidebar({ page }: { page: string }) {
             Chat
           </Link>
           <Link
-            href="/upload"
+            href="/documents"
             className={`${
-              page === "upload"
+              page === "documents"
                 ? "text-indigo-600 font-bold"
                 : "text-gray-700 dark:text-gray-300"
             } hover:text-indigo-500 hover:bg-gray-900 p-4`}
             onClick={() => setIsOpen(false)}
           >
-            Upload
+            Documents
           </Link>
           <Link
             href="/settings"
