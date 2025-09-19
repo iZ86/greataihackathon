@@ -1,8 +1,9 @@
 "use client";
 
+import { Search } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
-import UploadFile from "@/components/UploadFile";
+import UploadFileModal from "@/components/UploadFileModal";
 
 export default function Documents() {
   return (
@@ -23,25 +24,34 @@ export default function Documents() {
               </p>
             </div>
 
-            <UploadFile />
-
             {/* Documents table */}
             <div className="mt-12">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                My Documents
-              </h3>
-              <div className="overflow-x-auto rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                  Documents
+                </h3>
+
+                <UploadFileModal />
+              </div>
+
+              <div className="relative w-full mt-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search documents..."
+                  className="w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-700 py-2 pl-10 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200/50 dark:border-gray-700/50 h-[400px]">
                 <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-700 dark:text-gray-400 uppercase">
+                  <thead className="bg-gray-50 dark:bg-gray-700/50 text-xs text-gray-700 dark:text-gray-400 uppercase">
                     <tr>
                       <th className="px-6 py-3" scope="col">
                         Document Name
                       </th>
                       <th className="px-6 py-3" scope="col">
                         Uploaded Date
-                      </th>
-                      <th className="px-6 py-3" scope="col">
-                        Status
                       </th>
                       <th className="px-6 py-3" scope="col">
                         <span className="sr-only">Actions</span>
@@ -59,21 +69,22 @@ export default function Documents() {
                       <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                         2024-01-15
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300">
-                          <span className="w-2 h-2 mr-1.5 bg-green-500 rounded-full"></span>
-                          Processed
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 lg:justify-evenly lg:flex space-x-4">
                         <a
                           className="font-medium text-primary hover:underline"
                           href="#"
                         >
                           View
                         </a>
+                        <a
+                          className="font-medium text-primary hover:underline"
+                          href="#"
+                        >
+                          Download
+                        </a>
                       </td>
                     </tr>
+
                     <tr className="border-b border-gray-200 dark:border-gray-700/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                       <th
                         className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
@@ -84,21 +95,22 @@ export default function Documents() {
                       <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                         2024-02-20
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300">
-                          <span className="w-2 h-2 mr-1.5 bg-yellow-500 rounded-full animate-pulse"></span>
-                          Processing
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 lg:justify-evenly lg:flex space-x-4">
                         <a
                           className="font-medium text-primary hover:underline"
                           href="#"
                         >
                           View
                         </a>
+                        <a
+                          className="font-medium text-primary hover:underline"
+                          href="#"
+                        >
+                          Download
+                        </a>
                       </td>
                     </tr>
+
                     <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                       <th
                         className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
@@ -109,18 +121,18 @@ export default function Documents() {
                       <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                         2024-03-05
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300">
-                          <span className="w-2 h-2 mr-1.5 bg-green-500 rounded-full"></span>
-                          Processed
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 lg:justify-evenly lg:flex space-x-4">
                         <a
                           className="font-medium text-primary hover:underline"
                           href="#"
                         >
                           View
+                        </a>
+                        <a
+                          className="font-medium text-primary hover:underline"
+                          href="#"
+                        >
+                          Download
                         </a>
                       </td>
                     </tr>
