@@ -1,21 +1,59 @@
 import { Send } from "lucide-react";
-import { CircleStop } from "lucide-react";
-import { useState } from "react";
+import { CircleStop, Bot, Sparkles } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 export default function ChatArea() {
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>(
+    []
+  );
+  const [input, setInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  function sendMessage() {
-    if (!message.trim()) return;
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
+
+  async function sendMessage() {
+    if (!input.trim() || isLoading) return;
     setIsLoading(true);
-    // Simulate sending a message
-    setTimeout(() => {
-      console.log("Message sent:", message);
-      setMessage("");
+
+    // Add user message
+    setMessages((prev) => [...prev, { role: "user", content: input }]);
+    const currentInput = input;
+    setInput("");
+
+    try {
+      // Call AI API
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ question: currentInput }),
+      });
+      const data = await res.json();
+
+      // Add AI response
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.answer },
+      ]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Sorry, I encountered an error. Please try again.",
+        },
+      ]);
+    } finally {
       setIsLoading(false);
-    }, 4000);
+    }
   }
 
   return (
@@ -26,8 +64,10 @@ export default function ChatArea() {
         <div className="flex-1 overflow-y-auto px-6 py-6">
           <div className="mx-auto max-w-4xl">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-2">
+                <Sparkles className="w-8 h-8 text-blue-500" />
                 Ask me anything about your documents
+                <Sparkles className="w-8 h-8 text-blue-500" />
               </h2>
               <p className="text-gray-500 dark:text-gray-400 mt-2">
                 I&apos;m here to help you understand your medical records.
@@ -35,51 +75,97 @@ export default function ChatArea() {
             </div>
 
             {/* Messages */}
-            <div className="flex flex-col gap-6 h-48">
-              <div className="flex flex-col gap-2 items-start">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  HealthAI
-                </p>
-                <div className="rounded-lg bg-gray-200/50 dark:bg-gray-800/50 p-4 text-gray-800 dark:text-gray-200 max-w-lg">
-                  <p>
-                    Hi there! I&apos;m here to help you understand your medical
-                    documents. What would you like to know?
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 justify-end">
-                <div className="flex flex-col gap-2 items-end">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    You
-                  </p>
-                  <div className="rounded-lg bg-blue-500 p-4 text-white max-w-lg">
-                    <p>What are the potential side effects of Lisinopril?</p>
+            <div className="flex flex-col gap-6 h-56">
+              {messages.map((m, i) => (
+                <div
+                  key={i}
+                  className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"} transition-all duration-300 ease-in-out`}
+                >
+                  <span className="text-xs text-gray-500 flex items-center gap-1 mb-1">
+                    {m.role === "user" ? (
+                      "You"
+                    ) : (
+                      <>
+                        <Bot size={14} className="text-blue-500" />
+                        Medical AI Assistant
+                      </>
+                    )}
+                  </span>
+                  <div
+                    className={`p-4 rounded-2xl max-w-lg transition-all duration-300 transform ${
+                      m.role === "user"
+                        ? "bg-blue-500 text-white shadow-lg hover:shadow-blue-500/25"
+                        : "bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl backdrop-blur-sm mb-2"
+                    }`}
+                  >
+                    {m.role === "user" ? (
+                      m.content
+                    ) : (
+                      <div className="space-y-3 text-gray-800 dark:text-gray-200">
+                        {m.content}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              ))}
+
+              {/* Loading indicator for AI response */}
+              {isLoading && (
+                <div className="flex flex-col items-start animate-fade-in">
+                  <span className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                    <Bot size={14} className="text-blue-500 animate-pulse" />
+                    Medical AI Assistant is thinking...
+                  </span>
+                  <div className="p-4 rounded-2xl max-w-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg">
+                    <div className="flex space-x-2">
+                      <div
+                        className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"
+                        style={{ animationDelay: "0ms" }}
+                      />
+                      <div
+                        className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"
+                        style={{ animationDelay: "150ms" }}
+                      />
+                      <div
+                        className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"
+                        style={{ animationDelay: "300ms" }}
+                      />
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                      Analyzing medical records...
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
             </div>
           </div>
         </div>
 
         {/* Fixed input */}
-        <footer className="border-t border-gray-200/10 dark:border-gray-700/50 p-6 bg-background-light dark:bg-background-dark">
+        <footer className="border-t border-gray-200/10 dark:border-gray-700/50 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
           <div className="mx-auto max-w-4xl">
             <div className="relative">
               <input
-                className="w-full rounded-lg bg-gray-200/50 dark:bg-gray-800/50 py-3 pl-4 pr-16 text-gray-800 dark:text-gray-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 border-transparent focus:border-transparent"
-                placeholder="Type your question here..."
+                className="w-full rounded-2xl bg-white dark:bg-gray-800 py-4 pl-6 pr-20 text-gray-800 dark:text-gray-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-500/20 border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 transition-all duration-300 shadow-lg"
+                placeholder="Ask about patient records, medications, or diagnoses..."
                 type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) =>
+                  e.key === "Enter" && !isLoading && sendMessage()
+                }
+                disabled={isLoading}
               />
               <button
-                className={`absolute inset-y-0 right-0 flex items-center justify-center rounded-r-lg ${
+                className={`absolute inset-y-0 right-0 flex items-center justify-center rounded-r-2xl m-1 ${
                   isLoading
-                    ? "bg-gray-600 cursor-not-allowed hover:bg-gray-600"
-                    : "cursor-pointer bg-blue-500 hover:bg-blue-600"
-                } text-white h-full w-14`}
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 cursor-pointer transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/50"
+                } text-white h-[calc(100%-8px)] w-16`}
                 onClick={sendMessage}
+                disabled={isLoading}
               >
                 {isLoading ? (
                   <CircleStop size={20} className="animate-pulse" />
@@ -88,6 +174,10 @@ export default function ChatArea() {
                 )}
               </button>
             </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
+              Ask about medications, diagnoses, treatment plans, or any medical
+              information
+            </p>
           </div>
         </footer>
       </div>
