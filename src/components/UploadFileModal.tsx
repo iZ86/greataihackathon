@@ -8,7 +8,7 @@ import {
   Transition,
   TransitionChild,
 } from "@headlessui/react";
-import { CloudUpload, Upload } from "lucide-react";
+import { CloudUpload, Upload, Loader2 } from "lucide-react";
 import { Fragment, useState } from "react";
 import { Amplify } from "aws-amplify";
 import outputs from "../../amplify_outputs.json";
@@ -18,10 +18,13 @@ export default function UploadFileModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [emptyInput, setEmptyInput] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   function closeModal() {
     setIsOpen(false);
     setEmptyInput(false);
+    setFile(null);
+    setUploading(false);
   }
 
   function openModal() {
@@ -36,9 +39,11 @@ export default function UploadFileModal() {
       return;
     }
 
+    setUploading(true);
+
     try {
       const result = await uploadData({
-        path: `medical-query-bucket/${Date.now()}-${file.name}`,
+        path: `medical-records/${Date.now()}-${file.name}`,
         data: file,
         options: {
           contentType: file.type,
@@ -51,9 +56,11 @@ export default function UploadFileModal() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          documentKey: `medical-query-bucket/${Date.now()}-${file.name}`,
+          documentKey: `medical-records/${Date.now()}-${file.name}`,
         }),
       });
+
+      closeModal();
 
       if (!ingestResponse.ok) {
         throw new Error("Failed to trigger ingestion");
@@ -61,10 +68,10 @@ export default function UploadFileModal() {
 
       const ingestResult = await ingestResponse.json();
       console.log("Ingestion started:", ingestResult);
-
-      closeModal();
     } catch (error) {
       console.log(error);
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -141,15 +148,24 @@ export default function UploadFileModal() {
                       <button
                         type="button"
                         onClick={closeModal}
-                        className="px-4 py-2 text-sm rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 dark:active:bg-gray-700 font-semibold"
+                        className={`px-4 py-2 text-sm rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 ${uploading ? "cursor-not-allowed" : "cursor-pointer dark:active:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 "} font-semibold`}
+                        disabled={uploading}
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-4 py-2 text-sm rounded-md bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold"
+                        className={`px-4 py-2 text-sm rounded-md text-white font-semibold ${uploading ? "cursor-not-allowed bg-gray-400" : "cursor-pointer active:bg-blue-700 bg-blue-500 hover:bg-blue-600"}`}
+                        disabled={uploading}
                       >
-                        Upload
+                        {uploading ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="animate-spin" size={16} />
+                            Uploading...
+                          </div>
+                        ) : (
+                          <div className="flex items-center">Upload</div>
+                        )}
                       </button>
                     </div>
                   </form>
