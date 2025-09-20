@@ -71,19 +71,8 @@ export default function Sidebar({ page }: { page: string }) {
           >
             Documents
           </Link>
+
           <Link
-            href="/settings"
-            className={`${
-              page === "settings"
-                ? "text-indigo-600 font-bold"
-                : "text-gray-700 dark:text-gray-300"
-            } hover:text-indigo-500 hover:bg-gray-900 p-4`}
-            onClick={() => setIsOpen(false)}
-          >
-            Settings
-          </Link>
-          
-          <Link 
             href="/login"
             className={`${
               page === "settings"

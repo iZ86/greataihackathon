@@ -1,5 +1,6 @@
 "use client";
 
+import { uploadData } from "@aws-amplify/storage/internals";
 import {
   Dialog,
   DialogPanel,
@@ -9,7 +10,10 @@ import {
 } from "@headlessui/react";
 import { CloudUpload, Upload } from "lucide-react";
 import { Fragment, useState } from "react";
+import { Amplify } from "aws-amplify";
+import outputs from "../../amplify_outputs.json";
 
+Amplify.configure(outputs);
 export default function UploadFileModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -32,10 +36,36 @@ export default function UploadFileModal() {
       return;
     }
 
-    // Call upload api here
-    console.log("Uploading:", file.name);
+    try {
+      const result = await uploadData({
+        path: `medical-query-bucket/${Date.now()}-${file.name}`,
+        data: file,
+        options: {
+          contentType: file.type,
+        },
+      });
 
-    closeModal();
+      const ingestResponse = await fetch("/api/ingest", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          documentKey: `medical-query-bucket/${Date.now()}-${file.name}`,
+        }),
+      });
+
+      if (!ingestResponse.ok) {
+        throw new Error("Failed to trigger ingestion");
+      }
+
+      const ingestResult = await ingestResponse.json();
+      console.log("Ingestion started:", ingestResult);
+
+      closeModal();
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   return (
