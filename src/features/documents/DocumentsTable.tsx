@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { list, getUrl } from "aws-amplify/storage";
-import { Search, X } from "lucide-react";
+import { list, getUrl, remove } from "aws-amplify/storage";
+import { Search, X, Trash2, Eye } from "lucide-react";
 
 interface Document {
   key: string;
@@ -16,6 +16,7 @@ export default function DocumentsTable() {
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   async function getDocuments() {
     try {
@@ -61,6 +62,31 @@ export default function DocumentsTable() {
     } catch (error) {
       console.error("Error opening document:", error);
       alert("Failed to open document. Please try again.");
+    }
+  }
+
+  async function deleteDocument(key: string, name: string) {
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
+      return;
+    }
+
+    try {
+      setDeleting(key);
+      // Delete the document from storage
+      await remove({
+        path: key,
+      });
+
+      // Remove the document from the local state
+      setDocuments((prev) => prev.filter((doc) => doc.key !== key));
+      setFilteredDocuments((prev) => prev.filter((doc) => doc.key !== key));
+
+      alert(`"${name}" has been deleted successfully.`);
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      alert("Failed to delete document. Please try again.");
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -176,12 +202,23 @@ export default function DocumentsTable() {
                   <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                     {(document.size / 1024).toFixed(1)} KB
                   </td>
-                  <td className="px-6 py-4 lg:justify-evenly lg:flex space-x-4">
+                  <td className="px-6 py-4 flex items-center space-x-3">
                     <button
                       onClick={() => openDocumentInNewTab(document.key)}
-                      className="font-medium text-blue-500 hover:underline dark:text-blue-400 cursor-pointer"
+                      className="p-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                      title="View document"
                     >
-                      View
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        deleteDocument(document.key, document.name)
+                      }
+                      disabled={deleting === document.key}
+                      className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Delete document"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </td>
                 </tr>
