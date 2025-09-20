@@ -1,6 +1,5 @@
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
-import UploadFileModal from "@/components/UploadFileModal";
 import PreAuth from "../../../components/PreAuth";
 
 import DocumentsTable from "@/features/documents/DocumentsTable";

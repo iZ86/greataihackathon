@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { list, getUrl, remove } from "aws-amplify/storage";
-import { Search, X, Trash2, Eye } from "lucide-react";
+import { Search, X, Trash2, Eye, RefreshCcw } from "lucide-react";
+import UploadFileModal from "@/components/UploadFileModal";
 
 interface Document {
   key: string;
@@ -23,7 +24,7 @@ export default function DocumentsTable() {
       setLoading(true);
       // List all files in the medical-query-bucket
       const result = await list({
-        path: "medical-query-bucket/",
+        path: "medical-records/",
       });
 
       // Filter for PDF files and map to Document objects
@@ -80,8 +81,6 @@ export default function DocumentsTable() {
       // Remove the document from the local state
       setDocuments((prev) => prev.filter((doc) => doc.key !== key));
       setFilteredDocuments((prev) => prev.filter((doc) => doc.key !== key));
-
-      alert(`"${name}" has been deleted successfully.`);
     } catch (error) {
       console.error("Error deleting document:", error);
       alert("Failed to delete document. Please try again.");
@@ -124,30 +123,45 @@ export default function DocumentsTable() {
 
   return (
     <>
-      {/* Search Bar */}
-      <div className="mt-4 mb-4 flex items-center gap-2">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <input
-            type="text"
-            placeholder="Search documents by name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-700 py-2 pl-10 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          {searchTerm && (
+      <div>
+        <div className="justify-end flex">
+          <div className="mt-4 flex justify-end gap-6">
+            {/* Upload button */}
+            <UploadFileModal />
+            {/* Refresh button */}
             <button
-              onClick={clearSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              onClick={getDocuments}
+              className="px-3 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold"
             >
-              <X className="h-4 w-4" />
+              <RefreshCcw className="" size={16} />
             </button>
-          )}
+          </div>
         </div>
+        {/* Search Bar */}
+        <div className="mt-4 mb-4 flex items-center gap-2">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Search documents by name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-700 py-2 pl-10 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {searchTerm && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
 
-        {/* Results count */}
-        <div className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-          {filteredDocuments.length} of {documents.length} documents
+          {/* Results count */}
+          <div className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+            {filteredDocuments.length} of {documents.length} documents
+          </div>
         </div>
       </div>
 
@@ -202,10 +216,10 @@ export default function DocumentsTable() {
                   <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                     {(document.size / 1024).toFixed(1)} KB
                   </td>
-                  <td className="px-6 py-4 flex items-center space-x-3">
+                  <td className="px-6 py-4 flex items-center space-x-10">
                     <button
                       onClick={() => openDocumentInNewTab(document.key)}
-                      className="p-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                      className="p-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors cursor-pointer"
                       title="View document"
                     >
                       <Eye className="h-4 w-4" />
@@ -215,7 +229,7 @@ export default function DocumentsTable() {
                         deleteDocument(document.key, document.name)
                       }
                       disabled={deleting === document.key}
-                      className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       title="Delete document"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -226,16 +240,6 @@ export default function DocumentsTable() {
             )}
           </tbody>
         </table>
-      </div>
-
-      {/* Refresh button */}
-      <div className="mt-4 flex justify-end">
-        <button
-          onClick={getDocuments}
-          className="px-4 py-2 text-sm rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold"
-        >
-          Refresh Documents
-        </button>
       </div>
     </>
   );
