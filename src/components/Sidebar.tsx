@@ -71,7 +71,7 @@ export default function Sidebar({ page }: { page: string }) {
           >
             Documents
           </Link>
-          
+
           {/** This is a button rather than the link cause of signOut.
            * signOut will change the authStatus which in turns rerenders the PreAuth wrapper,
            * when signOut the authStatus becomes unauthenticated. Therefore, automatically bringing the user,
@@ -82,7 +82,7 @@ export default function Sidebar({ page }: { page: string }) {
               page === "settings"
                 ? "text-indigo-600 font-bold"
                 : "text-gray-700 dark:text-gray-300"
-            } hover:text-indigo-500 hover:bg-gray-900 p-4 flex`}
+            } hover:text-indigo-500 hover:bg-gray-900 p-4 flex cursor-pointer`}
             onClick={signOut}
             >
               Sign out
