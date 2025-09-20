@@ -1,28 +1,15 @@
+import { Authenticator } from '@aws-amplify/ui-react';
 
-import { FormEvent, useState, useEffect } from "react";
-import { useRouter } from 'next/navigation';
-
-import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
- 
 import '@aws-amplify/ui-react/styles.css';
 
 export default function LoginForm() {
-  const router = useRouter();
-  const { authStatus } = useAuthenticator((context) => [context.authStatus]);
-
-  useEffect(() => {
-    if (authStatus === "authenticated") {
-      router.push('/chat');
-    }
-  }, [authStatus, router]);
-
-  if (authStatus !== "unauthenticated") {
-    return null;
-  }
 
   return (
-    <Authenticator>
-    </Authenticator>
+    <div>
+      <Authenticator>
+      </Authenticator>
+    </div>
+
   );
 }
 
