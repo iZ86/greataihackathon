@@ -1,14 +1,31 @@
-import { Send } from "lucide-react";
+"use client";
+
+import { Loader2, Send } from "lucide-react";
 import { CircleStop, Bot, Sparkles } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "../../amplify/data/resource";
+import { Amplify } from "aws-amplify";
+import outputs from "../../amplify_outputs.json";
 
-export default function ChatArea() {
+Amplify.configure(outputs);
+const client = generateClient<Schema>();
+
+interface Message {
+  role: "user" | "ai";
+  content: string;
+  timestamp: Date;
+}
+
+export default function ChatArea({ sessionId }: { sessionId?: string }) {
   const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>(
-    []
-  );
+  const [isPreviousChatLoading, setIsPreviousChatLoading] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(
+    sessionId
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -18,12 +35,54 @@ export default function ChatArea() {
     scrollToBottom();
   }, [messages, isLoading]);
 
+  useEffect(() => {
+    // Clear messages when sessionId changes to prevent showing wrong messages
+    if (sessionId !== currentSessionId) {
+      setMessages([]);
+      setCurrentSessionId(sessionId);
+    }
+
+    async function checkAndLoadSession() {
+      if (!sessionId) return;
+
+      setIsPreviousChatLoading(true);
+      try {
+        // First check if the session exists in the database
+        const { data } = await client.models.ChatMessage.list({
+          filter: { sessionId: { eq: sessionId } },
+          limit: 2, // Only need to check if at least 2 message exists
+        });
+
+        // If session exists, load the full chat history
+        if (data.length > 0) {
+          const prevMessages = await loadChatHistory(sessionId);
+          setMessages(prevMessages);
+        } else {
+          // Session doesn't exist, start with empty messages
+          setMessages([]);
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+        setMessages([]);
+      } finally {
+        setIsPreviousChatLoading(false);
+      }
+    }
+
+    checkAndLoadSession();
+  }, [sessionId, currentSessionId]); // Added currentSessionId to dependency array
+
   async function sendMessage() {
     if (!input.trim() || isLoading) return;
     setIsLoading(true);
 
     // Add user message
-    setMessages((prev) => [...prev, { role: "user", content: input }]);
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: input, timestamp: new Date() },
+    ]);
+    await saveMessage(sessionId as string, "user", input); // Save to DB
+
     const currentInput = input;
     setInput("");
 
@@ -41,18 +100,60 @@ export default function ChatArea() {
       // Add AI response
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.answer },
+        { role: "ai", content: data.answer, timestamp: new Date() },
       ]);
+
+      // Save AI message to DB
+      await saveMessage(sessionId as string, "ai", data.answer);
     } catch (error) {
+      console.error("Error fetching AI response:", error);
       setMessages((prev) => [
         ...prev,
         {
-          role: "assistant",
+          role: "ai",
           content: "Sorry, I encountered an error. Please try again.",
+          timestamp: new Date(),
         },
       ]);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function saveMessage(
+    sessionId: string,
+    role: "user" | "ai",
+    message: string
+  ) {
+    try {
+      const test = await client.models.ChatMessage.create({
+        sessionId,
+        role,
+        message,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error saving message:", error);
+    }
+  }
+
+  async function loadChatHistory(sessionId: string): Promise<Message[]> {
+    try {
+      const { data: messages } = await client.models.ChatMessage.list({
+        filter: { sessionId: { eq: sessionId } },
+      });
+      
+      return messages
+        .filter((msg) => msg.message !== null && msg.message !== undefined)
+        .map((msg) => ({
+          role: msg.role as "user" | "ai",
+          content: msg.message as string,
+          timestamp: new Date(msg.createdAt as string),
+        }))
+        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    } catch (error) {
+      console.error("Error loading chat history:", error);
+      return [];
     }
   }
 
@@ -76,6 +177,21 @@ export default function ChatArea() {
 
             {/* Messages */}
             <div className="flex flex-col gap-6 h-56">
+              {isPreviousChatLoading && (
+                <div className="flex flex-col items-center justify-center mt-20 space-y-4">
+                  <Loader2 className="animate-spin" size={50} />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Loading chat history...
+                  </p>
+                </div>
+              )}
+
+              {!isPreviousChatLoading && messages.length === 0 && (
+                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  Start a new conversation by sending a message below.
+                </div>
+              )}
+
               {messages.map((m, i) => (
                 <div
                   key={i}
