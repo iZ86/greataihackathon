@@ -1,7 +1,17 @@
-import Image from "next/image";
-import React from "react";
-import { redirect, RedirectType } from 'next/navigation';
+"use client";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Home() {
-  redirect('/login', RedirectType.replace)
+  const router = useRouter();
+  
+  useEffect(() => {
+    router.push('/chat');
+  }, [router]);
+  
+  
+  return (
+    <div className="flex justify-center items-center min-h-screen">
+    </div>
+  );
 }
