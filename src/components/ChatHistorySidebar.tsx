@@ -6,10 +6,7 @@ import { History, Loader2, X } from "lucide-react";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "../../amplify/data/resource";
-import { Amplify } from "aws-amplify";
-import outputs from "../../amplify_outputs.json";
 
-Amplify.configure(outputs);
 const client = generateClient<Schema>();
 
 interface SessionInfo {

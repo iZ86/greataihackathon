@@ -10,10 +10,6 @@ import {
 } from "@headlessui/react";
 import { CloudUpload, Upload, Loader2 } from "lucide-react";
 import { Fragment, useState } from "react";
-import { Amplify } from "aws-amplify";
-import outputs from "../../amplify_outputs.json";
-
-Amplify.configure(outputs);
 export default function UploadFileModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
