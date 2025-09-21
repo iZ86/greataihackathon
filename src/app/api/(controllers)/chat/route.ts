@@ -97,7 +97,7 @@ async function checkWithGuardrail(content: string): Promise<{ blocked: boolean; 
 export async function POST(request: NextRequest): Promise<NextResponse | undefined> {
   try {
     const { question } = await request.json();
-
+    console.log("Question send:" , question);
     if (!question) {
       return NextResponse.json(
         { error: "Question is required" },
@@ -107,6 +107,7 @@ export async function POST(request: NextRequest): Promise<NextResponse | undefin
 
     // First check the question with guardrail
     const questionCheck = await checkWithGuardrail(question);
+    console.log("Question check: ", questionCheck);
     if (questionCheck && questionCheck.blocked) {
       return NextResponse.json({
         answer: "I cannot answer that question as it violates content safety policies.",
@@ -131,10 +132,10 @@ export async function POST(request: NextRequest): Promise<NextResponse | undefin
         }
       }
     };
-
+    console.log("Input:", input);
     const command = new RetrieveAndGenerateCommand(input);
     const response = await bedrockAgentClient.send(command);
-
+    console.log("Response: ", response);
     // Check if the response was blocked by guardrail
     if (response.guardrailAction === "INTERVENED") {
       return NextResponse.json({
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest): Promise<NextResponse | undefin
     }
 
     const answer = response.output?.text || "I couldn't find an answer to that question.";
-
+    console.log("Answer:", answer);
     // Check the final answer with guardrail as additional safety
     const answerCheck = await checkWithGuardrail(answer);
     if (answerCheck && answerCheck.blocked) {
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest): Promise<NextResponse | undefin
         blockReason: answerCheck.reason
       });
     }
-
+    console.log("Answer check: ", answerCheck);
     // Extract citations and sources
     const sources: KnowledgeBaseResponse['sources'] = [];
 
