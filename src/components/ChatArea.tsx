@@ -2,12 +2,13 @@
 
 import { Loader2, Send } from "lucide-react";
 import { CircleStop, Bot, Sparkles } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "../../amplify/data/resource";
 import { Amplify } from "aws-amplify";
 import outputs from "../../amplify_outputs.json";
+import { getCurrentUser } from "aws-amplify/auth";
 
 Amplify.configure(outputs);
 const client = generateClient<Schema>();
@@ -19,7 +20,8 @@ interface Message {
 }
 
 export default function ChatArea({
-  sessionId, isNewSession
+  sessionId,
+  isNewSession,
 }: {
   sessionId?: string;
   isNewSession?: boolean;
@@ -29,10 +31,9 @@ export default function ChatArea({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(
-    sessionId
-  );
+  const [userId, setUserId] = useState<string>("");
   const router = useRouter();
+  const hasLoadedRef = useRef(false); // Track if we've already loaded for this session
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,116 +43,86 @@ export default function ChatArea({
     scrollToBottom();
   }, [messages, isLoading]);
 
+  // Get user ID once on mount
   useEffect(() => {
-    if (isNewSession && sessionId) {
-      setCurrentSessionId(sessionId);
-      return;
+    async function getUserId() {
+      try {
+        const { userId } = await getCurrentUser();
+        setUserId(userId);
+      } catch (error) {
+        console.error("Error getting user:", error);
+      }
     }
+    getUserId();
+  }, []);
 
-    // Clear messages when sessionId changes to prevent showing wrong messages
-    if (sessionId !== currentSessionId) {
-      setMessages([]);
-      setCurrentSessionId(sessionId);
-    }
+  // Load chat history when sessionId or userId changes
+  useEffect(() => {
+    if (!sessionId || !userId || hasLoadedRef.current) return;
 
-    async function checkAndLoadSession() {
-      if (!sessionId) return;
-
+    const loadChatHistory = async () => {
       setIsPreviousChatLoading(true);
       try {
-        // First check if the session exists in the database
-        const { data } = await client.models.ChatMessage.list({
-          filter: { sessionId: { eq: sessionId } },
-        });
-
-        // If session exists, load the full chat history
-        if (data.length > 0) {
-          const prevMessages = await loadChatHistory(sessionId);
-          setMessages(prevMessages);
-        } else {
-          // Session doesn't exist, start with empty messages
-          setMessages([]);
-        }
+        const prevMessages = await loadChatHistoryFromDB(sessionId, userId);
+        setMessages(prevMessages);
       } catch (error) {
-        console.error("Error checking session:", error);
+        console.error("Error loading chat history:", error);
         setMessages([]);
       } finally {
         setIsPreviousChatLoading(false);
+        hasLoadedRef.current = true; // Mark as loaded for this session
       }
+    };
+
+    loadChatHistory();
+
+    // Reset the loaded flag when sessionId changes
+    return () => {
+      hasLoadedRef.current = false;
+    };
+  }, [sessionId, userId]);
+
+  // Reset messages when sessionId changes to a new one
+  useEffect(() => {
+    if (isNewSession) {
+      setMessages([]);
+      setInput("");
+      hasLoadedRef.current = true; // Prevent loading for new sessions
     }
+  }, [isNewSession, sessionId]);
 
-    checkAndLoadSession();
-  }, [sessionId, currentSessionId, router]); // Added currentSessionId to dependency array
+  const saveMessage = useCallback(
+    async (
+      sessionId: string,
+      userId: string,
+      role: "user" | "ai",
+      message: string
+    ) => {
+      try {
+        await client.models.ChatMessage.create({
+          sessionId,
+          userId,
+          role,
+          message,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error("Error saving message:", error);
+      }
+    },
+    []
+  );
 
-  async function sendMessage() {
-    if (!input.trim() || isLoading) return;
-    setIsLoading(true);
-
-    // Add user message
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", content: input, timestamp: new Date() },
-    ]);
-    await saveMessage(sessionId as string, "user", input); // Save to DB
-
-    const currentInput = input;
-    setInput("");
-
-    try {
-      // Call AI API
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ question: currentInput, sessionId }),
-      });
-      const data = await res.json();
-
-      // Add AI response
-      setMessages((prev) => [
-        ...prev,
-        { role: "ai", content: data.answer, timestamp: new Date() },
-      ]);
-
-      // Save AI message to DB
-      await saveMessage(sessionId as string, "ai", data.answer);
-    } catch (error) {
-      console.error("Error fetching AI response:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          content: "Sorry, I encountered an error. Please try again.",
-          timestamp: new Date(),
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function saveMessage(
+  const loadChatHistoryFromDB = async (
     sessionId: string,
-    role: "user" | "ai",
-    message: string
-  ) {
-    try {
-      await client.models.ChatMessage.create({
-        sessionId,
-        role,
-        message,
-        createdAt: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error("Error saving message:", error);
-    }
-  }
-
-  async function loadChatHistory(sessionId: string): Promise<Message[]> {
+    userId: string
+  ): Promise<Message[]> => {
     try {
       const { data: messages } = await client.models.ChatMessage.list({
-        filter: { sessionId: { eq: sessionId } },
+        filter: {
+          sessionId: { eq: sessionId },
+          userId: { eq: userId },
+        },
       });
 
       return messages
@@ -165,6 +136,67 @@ export default function ChatArea({
     } catch (error) {
       console.error("Error loading chat history:", error);
       return [];
+    }
+  };
+
+  async function sendMessage() {
+    if (!input.trim() || isLoading || !sessionId || !userId) return;
+
+    setIsLoading(true);
+
+    // Add user message to UI immediately
+    const userMessage: Message = {
+      role: "user",
+      content: input,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+
+    const currentInput = input;
+    setInput("");
+
+    try {
+      // Save user message to DB
+      await saveMessage(sessionId, userId, "user", currentInput);
+
+      // Call AI API
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: currentInput,
+          sessionId,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Add AI response to UI
+      const aiMessage: Message = {
+        role: "ai",
+        content: data.answer,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+
+      // Save AI message to DB
+      await saveMessage(sessionId, userId, "ai", data.answer);
+    } catch (error) {
+      console.error("Error fetching AI response:", error);
+      const errorMessage: Message = {
+        role: "ai",
+        content: "Sorry, I encountered an error. Please try again.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -197,12 +229,19 @@ export default function ChatArea({
                 </div>
               )}
 
-              {!isPreviousChatLoading && messages.length === 0 && (
+              {!isPreviousChatLoading &&
+                messages.length === 0 &&
+                !isNewSession && (
+                  <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    Invalid Session ID. Start a new conversation by sending a
+                    message below.
+                  </div>
+                )}
+              {isNewSession && (
                 <div className="text-center text-gray-500 dark:text-gray-400 py-8">
                   Start a new conversation by sending a message below.
                 </div>
               )}
-
               {messages.map((m, i) => (
                 <div
                   key={i}
@@ -283,16 +322,16 @@ export default function ChatArea({
                 onKeyPress={(e) =>
                   e.key === "Enter" && !isLoading && sendMessage()
                 }
-                disabled={isLoading}
+                disabled={isLoading || !sessionId}
               />
               <button
                 className={`absolute inset-y-0 right-0 flex items-center justify-center rounded-r-2xl m-1 ${
-                  isLoading
+                  isLoading || !sessionId
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 cursor-pointer transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/50"
                 } text-white h-[calc(100%-8px)] w-16`}
                 onClick={sendMessage}
-                disabled={isLoading}
+                disabled={isLoading || !sessionId}
               >
                 {isLoading ? (
                   <CircleStop size={20} className="animate-pulse" />

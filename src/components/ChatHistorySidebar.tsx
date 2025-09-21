@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { History, Loader2, X } from "lucide-react";
-import { useAuthenticator } from "@aws-amplify/ui-react";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "../../amplify/data/resource";
 import { Amplify } from "aws-amplify";
 import outputs from "../../amplify_outputs.json";
+import { getCurrentUser } from "aws-amplify/auth";
 
 Amplify.configure(outputs);
 const client = generateClient<Schema>();
@@ -22,7 +22,12 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
-  const { user, signOut } = useAuthenticator((context) => [context.user]);
+  const [userId, setUserId] = useState<string>("");
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  useEffect(() => {
+    getUserId();
+  }, []);
 
   useEffect(() => {
     async function loadSessions() {
@@ -30,14 +35,19 @@ export default function Sidebar() {
       if (!sessions.length) setIsHistoryLoading(true);
 
       try {
-        const res = await client.models.ChatMessage.list();
-
+        const res = await client.models.ChatMessage.list({
+          filter: {
+            userId: { eq: userId },
+          },
+        });
+        console.log("test");
         const sessionsMap = new Map<string, SessionInfo>();
 
         res.data.forEach((message) => {
           if (!message.sessionId) return;
 
           const sessionId = message.sessionId;
+
           const createdAt = new Date(message.createdAt as string);
 
           // Get the existing session or create a new one
@@ -62,16 +72,26 @@ export default function Sidebar() {
         );
 
         setSessions(sortedSessions);
+        setHasLoaded(true);
       } catch (error) {
         console.error("Error loading sessions:", error);
+        setIsHistoryLoading(false);
       } finally {
         setIsHistoryLoading(false);
       }
     }
 
-    if (isOpen) loadSessions();
-  }, [isOpen, sessions]);
+    if (isOpen && userId && !hasLoaded) loadSessions();
+  }, [isOpen, sessions, userId, hasLoaded]);
 
+  async function getUserId() {
+    try {
+      const { userId } = await getCurrentUser();
+      setUserId(userId);
+    } catch (error) {
+      console.error("Error getting user:", error);
+    }
+  }
   return (
     <>
       {/* History button */}
