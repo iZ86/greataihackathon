@@ -26,7 +26,9 @@ export default function Sidebar() {
 
   useEffect(() => {
     async function loadSessions() {
-      setIsHistoryLoading(true);
+      // Only load if 0 sessions (to avoid reloading on every open)
+      if (!sessions.length) setIsHistoryLoading(true);
+
       try {
         const res = await client.models.ChatMessage.list();
 
@@ -67,17 +69,17 @@ export default function Sidebar() {
     }
 
     if (isOpen) loadSessions();
-  }, [isOpen]);
+  }, [isOpen, sessions]);
 
   return (
     <>
       {/* History button */}
-      <div className="shadow-md px-6 py-4 flex items-center justify-between lg:absolute lg:top-20 lg:right-0">
+      <div className="px-6 py-4 flex items-center justify-between lg:absolute lg:top-20 lg:right-0">
         <button
           onClick={() => setIsOpen(true)}
           className="text-gray-800 dark:text-gray-200"
         >
-          <History size={32} className="cursor-e-resize" />
+          <History size={32} className="cursor-w-resize" />
         </button>
       </div>
 
