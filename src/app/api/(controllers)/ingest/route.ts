@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { BedrockAgentClient, StartIngestionJobCommand } from "@aws-sdk/client-bedrock-agent";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // Initialize Bedrock client
     const client = new BedrockAgentClient({
