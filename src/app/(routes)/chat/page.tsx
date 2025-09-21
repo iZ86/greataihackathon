@@ -24,7 +24,7 @@ export default function NewChat() {
       <PreAuth>
         <Sidebar page="chat" />
         <ChatHistorySidebar />
-        <ChatArea sessionId={sessionId} />
+        <ChatArea sessionId={sessionId} isNewSession={true} />
       </PreAuth>
     </div>
   );
