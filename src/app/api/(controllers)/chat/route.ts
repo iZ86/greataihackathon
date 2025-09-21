@@ -8,7 +8,7 @@ const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID as string;
 const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY as string;
 const KNOWLEDGE_BASE_ID = process.env.KNOWLEDGE_BASE_ID as string;
 const DATA_SOURCE_ID = process.env.DATA_SOURCE_ID as string;
-const AWS_REGION = process.env.AWS_REGION as string;
+const REGION = process.env.REGION as string;
 const GUARDRAIL_ID = process.env.GUARDRAIL_ID as string;
 const GUARDRAIL_VERSION = process.env.GUARDRAIL_VERSION as string;
 const MODEL_ID = process.env.MODEL_ID as string;
@@ -16,20 +16,20 @@ const MODEL_ARN = process.env.MODEL_ARN as string;
 
 // Initialize clients
 const bedrockAgentClient = new BedrockAgentRuntimeClient({
-  region: AWS_REGION,
+  region: REGION,
   credentials: {
     accessKeyId: ACCESS_KEY_ID,
     secretAccessKey: SECRET_ACCESS_KEY,
   }
 });
 const bedrockRuntimeClient = new BedrockRuntimeClient({
-  region: AWS_REGION,
+  region: REGION,
   credentials: {
     accessKeyId: ACCESS_KEY_ID,
     secretAccessKey: SECRET_ACCESS_KEY,
   }
 });
-const s3Client = new S3Client({ region: AWS_REGION });
+const s3Client = new S3Client({ region: REGION });
 
 interface KnowledgeBaseResponse {
   answer: string;
