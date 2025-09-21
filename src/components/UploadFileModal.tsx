@@ -49,8 +49,12 @@ export default function UploadFileModal({
     const newFiles: UploadFile[] = [];
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
-      // Only accept PDF files
-      if (file && file.type === "application/pdf") {
+      if (file && (file.type === "application/pdf" ||
+        file.type === "image/jpeg" ||
+        file.type === "image/jpg" ||
+        file.type === "image/png" ||
+        file.type === "application/msword" ||
+        file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
         newFiles.push({
           file,
           name: file.name,
@@ -268,7 +272,7 @@ export default function UploadFileModal({
                         Drag and drop or select files
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-6">
-                        Supported formats: PDF only. Select multiple files.
+                        Supported formats: pdf, jpeg, jpg, png, doc, docx. Select multiple files.
                       </p>
                       <input
                         ref={fileInputRef}
@@ -278,7 +282,7 @@ export default function UploadFileModal({
                         name="attachment"
                         type="file"
                         multiple
-                        accept="application/pdf"
+                        accept="application/pdf, image/jpeg, image/png, image/jpg, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       />
                     </div>
 

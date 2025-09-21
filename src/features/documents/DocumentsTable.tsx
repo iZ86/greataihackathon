@@ -5,6 +5,8 @@ import { list, getUrl, remove } from "aws-amplify/storage";
 import { Search, X, Trash2, Eye, RefreshCcw } from "lucide-react";
 import UploadFileModal from "@/components/UploadFileModal";
 
+const ALLOWEDFILETYPES = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
+
 interface Document {
   key: string;
   name: string;
@@ -27,9 +29,12 @@ export default function DocumentsTable() {
         path: "medical-records/",
       });
 
-      // Filter for PDF files and map to Document objects
-      const pdfDocuments = result.items
-        .filter((item) => item.path?.endsWith(".pdf"))
+      // Filter for document files and map to Document objects
+      const documents = result.items
+        .filter((item) => {
+          const path = item.path?.toLowerCase();
+          return path && ALLOWEDFILETYPES.some(ext => path.endsWith(ext));
+        })
         .map((item) => ({
           key: item.path!,
           name: item.path!.split("/").pop() || item.path!,
@@ -39,8 +44,8 @@ export default function DocumentsTable() {
           size: item.size || 0,
         }));
 
-      setDocuments(pdfDocuments);
-      setFilteredDocuments(pdfDocuments);
+      setDocuments(documents);
+      setFilteredDocuments(documents);
     } catch (error) {
       console.error("Error fetching documents:", error);
     } finally {
@@ -58,7 +63,7 @@ export default function DocumentsTable() {
         },
       });
 
-      // Open the PDF in a new tab
+      // Open the document in a new tab
       window.open(url.toString(), "_blank", "noopener,noreferrer");
     } catch (error) {
       console.error("Error opening document:", error);
@@ -193,7 +198,13 @@ export default function DocumentsTable() {
                   {searchTerm ? (
                     <>No documents found matching &quot;{searchTerm}&quot;</>
                   ) : (
-                    <>No documents found. Upload a PDF to get started.</>
+                    <div className="flex flex-col">
+                      <p>No documents found. Upload a document to get started.</p>
+                      <p>
+                        Supported formats: pdf, jpeg, jpg, png, doc, docx. Select multiple files.
+                      </p>
+                    </div>
+
                   )}
                 </td>
               </tr>
