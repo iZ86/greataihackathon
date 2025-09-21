@@ -14,7 +14,7 @@ const client = generateClient<Schema>();
 
 interface SessionInfo {
   id: string;
-  firstMessage: string;
+  lastMessage: string;
   timestamp: Date;
 }
 
@@ -40,15 +40,16 @@ export default function Sidebar() {
           const sessionId = message.sessionId;
           const createdAt = new Date(message.createdAt as string);
 
-          if (
-            !sessionsMap.has(sessionId) ||
-            createdAt < sessionsMap.get(sessionId)!.timestamp
-          ) {
-            // Only use user messages as the first message
-            if (message.role === "user" && message.message) {
+          // Get the existing session or create a new one
+          const existingSession = sessionsMap.get(sessionId);
+
+          // Update if this message is newer than the existing one
+          if (!existingSession || createdAt > existingSession.timestamp) {
+            // Use the last message (regardless of role)
+            if (message.role == "user" && message.message) {
               sessionsMap.set(sessionId, {
                 id: sessionId,
-                firstMessage: message.message,
+                lastMessage: message.message,
                 timestamp: createdAt,
               });
             }
@@ -93,11 +94,11 @@ export default function Sidebar() {
 
       {/* Sidebar Drawer */}
       <aside
-        className={`fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg z-50 transform transition-transform duration-300
+        className={`overflow-y-auto fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg z-50 transform transition-transform duration-300
           ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         {/* Close Button */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-[#101c22]">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
             Chat History
           </h2>
@@ -125,7 +126,7 @@ export default function Sidebar() {
               onClick={() => setIsOpen(false)}
             >
               <div className="text-sm font-medium text-gray-800 dark:text-gray-200 line-clamp-2">
-                {session.firstMessage}
+                {session.lastMessage}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {session.timestamp.toLocaleDateString()} at{" "}
