@@ -7,7 +7,8 @@ const schema = a.schema({
     userId: a.string(),                // who sent it
     role: a.enum(['user', 'ai']),      // message role
     message: a.string(),               // text
-    createdAt: a.datetime().required() // timestamp
+    createdAt: a.datetime().required(), // timestamp
+    sources: a.string()
   }).authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 });
 

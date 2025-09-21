@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Send } from "lucide-react";
+import { Check, Copy, Loader2, Send } from "lucide-react";
 import { CircleStop, Bot, Sparkles } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,17 @@ interface Message {
   role: "user" | "ai";
   content: string;
   timestamp: Date;
+  sources?: string[];
+}
+
+interface AiResponse {
+  answer: string;
+  sources: {
+    s3Uri?: string;
+    preSignedUrl?: string;
+    excerpt?: string;
+  }[];
+  blocked: boolean;
 }
 
 export default function ChatArea({
@@ -27,6 +38,7 @@ export default function ChatArea({
   const [isPreviousChatLoading, setIsPreviousChatLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [userId, setUserId] = useState<string>("");
   const router = useRouter();
@@ -53,8 +65,19 @@ export default function ChatArea({
     getUserId();
   }, []);
 
+  // Reset messages when sessionId changes to a new one
+  useEffect(() => {
+    if (isNewSession) {
+      router.replace(`/chat/${sessionId}`);
+      setMessages([]);
+      setInput("");
+      hasLoadedRef.current = true; // Prevent loading for new sessions
+    }
+  }, [isNewSession, sessionId, router]);
+
   // Load chat history when sessionId or userId changes
   useEffect(() => {
+    if (isNewSession) return; // Skip loading for new sessions
     if (!sessionId || !userId || hasLoadedRef.current) return;
 
     const loadChatHistory = async () => {
@@ -77,30 +100,29 @@ export default function ChatArea({
     return () => {
       hasLoadedRef.current = false;
     };
-  }, [sessionId, userId]);
-
-  // Reset messages when sessionId changes to a new one
-  useEffect(() => {
-    if (isNewSession) {
-      setMessages([]);
-      setInput("");
-      hasLoadedRef.current = true; // Prevent loading for new sessions
-    }
-  }, [isNewSession, sessionId]);
+  }, [sessionId, userId, isNewSession]);
 
   const saveMessage = useCallback(
     async (
       sessionId: string,
       userId: string,
       role: "user" | "ai",
-      message: string
+      message: string,
+      sources?: string[]
     ) => {
       try {
+        let sourcesStr = "";
+
+        if (sources) {
+          sourcesStr = sources.join(",");
+        }
+
         await client.models.ChatMessage.create({
           sessionId,
           userId,
           role,
           message,
+          sources: sourcesStr,
           createdAt: new Date().toISOString(),
         });
       } catch (error) {
@@ -128,6 +150,7 @@ export default function ChatArea({
           role: msg.role as "user" | "ai",
           content: msg.message as string,
           timestamp: new Date(msg.createdAt as string),
+          sources: msg.sources ? (msg.sources as string).split(",") : [],
         }))
         .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
     } catch (error) {
@@ -147,6 +170,8 @@ export default function ChatArea({
       content: input,
       timestamp: new Date(),
     };
+
+    console.log("Current messages:", [...messages, userMessage]);
     setMessages((prev) => [...prev, userMessage]);
 
     const currentInput = input;
@@ -164,7 +189,6 @@ export default function ChatArea({
         },
         body: JSON.stringify({
           question: currentInput,
-          sessionId,
         }),
       });
 
@@ -172,18 +196,24 @@ export default function ChatArea({
         throw new Error(`API error: ${res.status}`);
       }
 
-      const data = await res.json();
+      const data: AiResponse = await res.json();
+
+      const mappedSources = data.sources
+        .map((source) => source.preSignedUrl)
+        .filter((url): url is string => url !== undefined);
 
       // Add AI response to UI
       const aiMessage: Message = {
         role: "ai",
         content: data.answer,
         timestamp: new Date(),
+        sources: mappedSources,
       };
+
       setMessages((prev) => [...prev, aiMessage]);
 
       // Save AI message to DB
-      await saveMessage(sessionId, userId, "ai", data.answer);
+      await saveMessage(sessionId, userId, "ai", data.answer, mappedSources);
     } catch (error) {
       console.error("Error fetching AI response:", error);
       const errorMessage: Message = {
@@ -196,6 +226,20 @@ export default function ChatArea({
       setIsLoading(false);
     }
   }
+
+  const copyToClipboard = async (text: string, messageIndex: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(messageIndex);
+
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedMessageId(null);
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy: ", err);
+    }
+  };
 
   return (
     <>
@@ -230,15 +274,9 @@ export default function ChatArea({
                 messages.length === 0 &&
                 !isNewSession && (
                   <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                    Invalid Session ID. Start a new conversation by sending a
-                    message below.
+                    Start a new conversation by sending a message below.
                   </div>
                 )}
-              {isNewSession && (
-                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  Start a new conversation by sending a message below.
-                </div>
-              )}
               {messages.map((m, i) => (
                 <div
                   key={i}
@@ -264,9 +302,63 @@ export default function ChatArea({
                     {m.role === "user" ? (
                       m.content
                     ) : (
-                      <div className="space-y-3 text-gray-800 dark:text-gray-200">
-                        {m.content}
-                      </div>
+                      <>
+                        <div className="space-y-3 text-gray-800 dark:text-gray-200">
+                          {m.content}
+                          {m.sources && m.sources.length > 0 && (
+                            <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Source Documents:
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {m.sources.map(
+                                  (source, index) =>
+                                    source && (
+                                      <a
+                                        key={index}
+                                        href={source}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-2 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs flex items-center transition-colors"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        [{index + 1}]
+                                      </a>
+                                    )
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Copy button with feedback */}
+                        {m.role === "ai" && (
+                          <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                            {copiedMessageId === i && (
+                              <span className="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900 px-2 py-1 rounded-md animate-fade-in">
+                                Copied!
+                              </span>
+                            )}
+                            <button
+                              onClick={() => copyToClipboard(m.content, i)}
+                              className="p-1.5 rounded-md bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                              title="Copy to clipboard"
+                            >
+                              {copiedMessageId === i ? (
+                                <Check
+                                  size={14}
+                                  className="text-green-600 dark:text-green-400"
+                                />
+                              ) : (
+                                <Copy
+                                  size={14}
+                                  className="text-gray-600 dark:text-gray-300"
+                                />
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
