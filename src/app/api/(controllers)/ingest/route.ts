@@ -3,8 +3,6 @@ import { BedrockAgentClient, StartIngestionJobCommand } from "@aws-sdk/client-be
 
 export async function POST(request: NextRequest) {
   try {
-    await request.json();
-
     // Initialize Bedrock client
     const client = new BedrockAgentClient({
       region: process.env.AWS_REGION
