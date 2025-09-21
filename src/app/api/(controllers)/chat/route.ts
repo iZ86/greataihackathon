@@ -4,29 +4,32 @@ import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-r
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
+const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID as string;
+const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY as string;
+const KNOWLEDGE_BASE_ID = process.env.KNOWLEDGE_BASE_ID as string;
+const DATA_SOURCE_ID = process.env.DATA_SOURCE_ID as string;
+const AWS_REGION = process.env.AWS_REGION as string;
+const GUARDRAIL_ID = process.env.GUARDRAIL_ID as string;
+const GUARDRAIL_VERSION = process.env.GUARDRAIL_VERSION as string;
+const MODEL_ID = process.env.MODEL_ID as string;
+const MODEL_ARN = process.env.MODEL_ARN as string;
+
 // Initialize clients
 const bedrockAgentClient = new BedrockAgentRuntimeClient({
-  region: "us-east-1",
+  region: AWS_REGION,
   credentials: {
-    accessKeyId: 'AKIAX323SOFQLXFSOG4H',
-    secretAccessKey: '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',
+    accessKeyId: ACCESS_KEY_ID,
+    secretAccessKey: SECRET_ACCESS_KEY,
   }
 });
 const bedrockRuntimeClient = new BedrockRuntimeClient({
-  region: "us-east-1",
+  region: AWS_REGION,
   credentials: {
-    accessKeyId: 'AKIAX323SOFQLXFSOG4H',
-    secretAccessKey: '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',
+    accessKeyId: ACCESS_KEY_ID,
+    secretAccessKey: SECRET_ACCESS_KEY,
   }
 });
-const s3Client = new S3Client({ region: "us-east-1" });
-
-// Your guardrail ID from AWS Console
-const GUARDRAIL_ID = '6pv7p3nihjun';
-const GUARDRAIL_VERSION = 'DRAFT';
-const MODEL_ID = 'amazon.nova-pro-v1:0';
-const MODEL_ARN = 'arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0';
-const KNOWLEDGE_BASE_ID = 'FD7BZIWC56';
+const s3Client = new S3Client({ region: AWS_REGION });
 
 interface KnowledgeBaseResponse {
   answer: string;
