@@ -2,7 +2,7 @@
 
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 
 export default function PreAuth({
@@ -16,7 +16,7 @@ export default function PreAuth({
   useEffect(() => {
     if (authStatus === 'unauthenticated') {
       router.push('/login');
-    } 
+    }
   }, [authStatus, router]);
   if (authStatus !== 'authenticated') {
     return null;

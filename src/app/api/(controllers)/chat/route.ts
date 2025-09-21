@@ -47,7 +47,7 @@ async function generatePresignedUrl(s3Uri: string): Promise<string> {
 }
 
 // Function to check if content should be blocked using guardrail
-async function checkWithGuardrail(content: string): Promise<{ blocked: boolean; reason?: string }> {
+async function checkWithGuardrail(content: string): Promise<{ blocked: boolean; reason?: string } | undefined> {
   try {
     const command = new ConverseCommand({
       modelId: MODEL_ID,
@@ -77,19 +77,24 @@ async function checkWithGuardrail(content: string): Promise<{ blocked: boolean; 
     }
 
     return { blocked: false };
-  } catch (error: any) {
-    if (error.name === "GuardrailIntervened") {
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.name === "GuardrailIntervened") {
+        return {
+          blocked: true,
+          reason: error.message || "Content violates safety policies"
+        };
+      }
+    } else {
       return {
         blocked: true,
-        reason: error.message || "Content violates safety policies"
-      };
+        reason: String(error) || "Unknown error"
+      }
     }
-    console.error("Guardrail check error:", error);
-    return { blocked: false }; // Allow on error for safety
   }
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest): Promise<NextResponse | undefined> {
   try {
     const { question } = await request.json();
 
@@ -102,7 +107,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // First check the question with guardrail
     const questionCheck = await checkWithGuardrail(question);
-    if (questionCheck.blocked) {
+    if (questionCheck && questionCheck.blocked) {
       return NextResponse.json({
         answer: "I cannot answer that question as it violates content safety policies.",
         sources: [],
@@ -144,7 +149,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Check the final answer with guardrail as additional safety
     const answerCheck = await checkWithGuardrail(answer);
-    if (answerCheck.blocked) {
+    if (answerCheck && answerCheck.blocked) {
       return NextResponse.json({
         answer: "I cannot provide the answer as it violates content safety policies.",
         sources: [],
@@ -183,22 +188,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       blocked: false
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in knowledge base API:", error);
 
     // Handle guardrail intervention errors
-    if (error.name === "GuardrailIntervened") {
-      return NextResponse.json({
-        answer: "I cannot answer that question due to content safety restrictions.",
-        sources: [],
-        blocked: true,
-        blockReason: error.message
-      });
+    if (error instanceof Error) {
+      if (error.name === "GuardrailIntervened") {
+        return NextResponse.json({
+          answer: "I cannot answer that question due to content safety restrictions.",
+          sources: [],
+          blocked: true,
+          blockReason: error.message
+        });
+      } else {
+        return NextResponse.json(
+          { error: "Internal server error", details: error.message },
+          { status: 500 }
+        );
+      }
     }
-
-    return NextResponse.json(
-      { error: "Internal server error", details: error.message },
-      { status: 500 }
-    );
   }
 }

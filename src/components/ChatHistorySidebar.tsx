@@ -19,7 +19,7 @@ interface SessionInfo {
 
 
 
-function DeleteChatHistoryModal({ openDeleteModal, setOpenDeleteModal, deleteSession }: { openDeleteModal: boolean, setOpenDeleteModal: React.Dispatch<React.SetStateAction<boolean>>, deleteSession: () => {} }) {
+function DeleteChatHistoryModal({ openDeleteModal, setOpenDeleteModal, deleteSession }: { openDeleteModal: boolean, setOpenDeleteModal: React.Dispatch<React.SetStateAction<boolean>>, deleteSession: () => void }) {
   return (
     <Transition appear show={openDeleteModal} as={Fragment}>
       <Dialog open={openDeleteModal} onClose={() => setOpenDeleteModal(false)} className="relative z-100">
@@ -78,8 +78,8 @@ export default function Sidebar() {
 
       // If session exists, delete it
       if (data.length > 0) {
-        for (let message of data) {
-          let success = await client.models.ChatMessage.delete({
+        for (const message of data) {
+          const success = await client.models.ChatMessage.delete({
             id: message.id
           });
           console.log(success);
@@ -210,7 +210,7 @@ export default function Sidebar() {
                 </MenuButton>
                 <MenuItems modal={false} className="border z-90 border-gray-200 dark:border-gray-600 rounded" anchor="bottom">
                   <MenuItem>
-                    <button onClick={(e) => {
+                    <button onClick={() => {
                       setOpenDeleteModal(true);
                       setDeleteSessionId(session.sessionId);
                     }} value={session.sessionId} className="hover:bg-gray-100 dark:hover:bg-gray-700 bg-background text-sm p-2 text-red-400 cursor-pointer">
