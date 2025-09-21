@@ -7,12 +7,12 @@ export async function POST(request: NextRequest) {
 
     // Initialize Bedrock client
     const client = new BedrockAgentClient({
-      region: process.env.AWS_REGION || 'us-east-1'
+      region: process.env.AWS_REGION
     });
 
     const command = new StartIngestionJobCommand({
-      knowledgeBaseId: process.env.BEDROCK_KNOWLEDGE_BASE_ID || 'FD7BZIWC56',
-      dataSourceId: process.env.BEDROCK_DATA_SOURCE_ID || 'B22NLSNUFV'
+      knowledgeBaseId: process.env.BEDROCK_KNOWLEDGE_BASE_ID,
+      dataSourceId: process.env.BEDROCK_DATA_SOURCE_ID
     });
 
     const response = await client.send(command);
