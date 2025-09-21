@@ -1,23 +1,39 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react"; // hamburger & close icons
+import { Menu, SquarePen, X } from "lucide-react"; // hamburger & close icons
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { generateSessionId } from "@/utils/session";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 
 export default function Sidebar({ page }: { page: string }) {
   const [isOpen, setIsOpen] = useState(false);
-  const {user, signOut} = useAuthenticator((context) => [context.user]);
+  const { user, signOut } = useAuthenticator((context) => [context.user]);
+  const router = useRouter();
+
+  function handleNewChat() {
+    router.push("/chat/");
+  }
 
   return (
     <>
       {/* Top Navbar with Hamburger */}
-      <div className="shadow-md px-6 py-4 flex items-center justify-between lg:absolute lg:top-20 lg:left-0">
+      <div className="px-6 py-4 flex items-center justify-between lg:absolute lg:top-20 lg:left-0 gap-x-8">
         <button
           onClick={() => setIsOpen(true)}
-          className="text-gray-800 dark:text-gray-200"
+          className="text-gray-800 dark:text-gray-200 p-2 rounded-md hover:bg-gray-700/80 transition-colors"
+          title="Menu"
         >
           <Menu size={32} className="cursor-e-resize" />
+        </button>
+
+        <button
+          onClick={() => handleNewChat()}
+          className="text-gray-800 dark:text-gray-200 p-2 rounded-md hover:bg-gray-700/80 transition-colors"
+          title="New Chat"
+        >
+          <SquarePen size={32} className="cursor-pointer" />
         </button>
       </div>
 
@@ -84,10 +100,9 @@ export default function Sidebar({ page }: { page: string }) {
                 : "text-gray-700 dark:text-gray-300"
             } hover:text-indigo-500 hover:bg-gray-900 p-4 flex cursor-pointer`}
             onClick={signOut}
-            >
-              Sign out
+          >
+            Sign out
           </button>
-
         </nav>
       </aside>
     </>
