@@ -5,8 +5,20 @@ import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // Initialize clients
-const bedrockAgentClient = new BedrockAgentRuntimeClient({ region: "us-east-1" });
-const bedrockRuntimeClient = new BedrockRuntimeClient({ region: "us-east-1" });
+const bedrockAgentClient = new BedrockAgentRuntimeClient({
+  region: "us-east-1",
+  credentials: {
+    accessKeyId: 'AKIAX323SOFQLXFSOG4H',
+    secretAccessKey: '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',
+  }
+});
+const bedrockRuntimeClient = new BedrockRuntimeClient({
+  region: "us-east-1",
+  credentials: {
+    accessKeyId: 'AKIAX323SOFQLXFSOG4H',
+    secretAccessKey: 'GhSz8X8X8eIOaFLzF+E1/PH/L9ck7Nu3BstkxptT',
+  }
+});
 const s3Client = new S3Client({ region: "us-east-1" });
 
 // Your guardrail ID from AWS Console
@@ -97,7 +109,7 @@ async function checkWithGuardrail(content: string): Promise<{ blocked: boolean; 
 export async function POST(request: NextRequest): Promise<NextResponse | undefined> {
   try {
     const { question } = await request.json();
-    console.log("Question send:" , question);
+    console.log("Question send:", question);
     if (!question) {
       return NextResponse.json(
         { error: "Question is required" },
