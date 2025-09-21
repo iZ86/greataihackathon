@@ -10,11 +10,11 @@ const bedrockRuntimeClient = new BedrockRuntimeClient({ region: "us-east-1" });
 const s3Client = new S3Client({ region: "us-east-1" });
 
 // Your guardrail ID from AWS Console
-const GUARDRAIL_ID = process.env.GUARDRAIL_ID;
-const GUARDRAIL_VERSION = process.env.GUARDRAIL_VERSION;
-const MODEL_ID = process.env.MODEL_ID;
-const MODEL_ARN = process.env.MODEL_ARN;
-const KNOWLEDGE_BASE_ID = process.env.KNOWLEDGE_BASE_ID;
+const GUARDRAIL_ID = '6pv7p3nihjun';
+const GUARDRAIL_VERSION = 'DRAFT';
+const MODEL_ID = 'amazon.nova-pro-v1:0';
+const MODEL_ARN = 'arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0';
+const KNOWLEDGE_BASE_ID = 'FD7BZIWC56';
 
 interface KnowledgeBaseResponse {
   answer: string;
