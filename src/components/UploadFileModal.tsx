@@ -10,10 +10,6 @@ import {
 } from "@headlessui/react";
 import { CloudUpload, Upload, Loader2, X, FileText } from "lucide-react";
 import { Fragment, useState, useRef } from "react";
-import { Amplify } from "aws-amplify";
-import outputs from "../../amplify_outputs.json";
-
-Amplify.configure(outputs);
 
 interface UploadFile {
   file: File | null;
