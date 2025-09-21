@@ -127,7 +127,7 @@ export default function DocumentsTable() {
         <div className="justify-end flex">
           <div className="mt-4 flex justify-end gap-6">
             {/* Upload button */}
-            <UploadFileModal />
+            <UploadFileModal onUploadComplete={getDocuments} />
             {/* Refresh button */}
             <button
               onClick={getDocuments}
@@ -167,7 +167,7 @@ export default function DocumentsTable() {
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200/50 dark:border-gray-700/50 max-h-[400px]">
         <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 dark:bg-gray-700/50 text-xs text-gray-700 dark:text-gray-400 uppercase sticky top-0">
+          <thead className="bg-gray-50 dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-400 uppercase sticky top-0">
             <tr>
               <th className="px-6 py-3" scope="col">
                 Document Name
