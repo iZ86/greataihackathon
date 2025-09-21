@@ -5,7 +5,7 @@ import { list, getUrl, remove } from "aws-amplify/storage";
 import { Search, X, Trash2, Eye, RefreshCcw } from "lucide-react";
 import UploadFileModal from "@/components/UploadFileModal";
 
-const ALLOWEDFILETYPES = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
+const ALLOWEDFILETYPES = [".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx"];
 
 interface Document {
   key: string;
@@ -33,7 +33,7 @@ export default function DocumentsTable() {
       const documents = result.items
         .filter((item) => {
           const path = item.path?.toLowerCase();
-          return path && ALLOWEDFILETYPES.some(ext => path.endsWith(ext));
+          return path && ALLOWEDFILETYPES.some((ext) => path.endsWith(ext));
         })
         .map((item) => ({
           key: item.path!,
@@ -86,6 +86,28 @@ export default function DocumentsTable() {
       // Remove the document from the local state
       setDocuments((prev) => prev.filter((doc) => doc.key !== key));
       setFilteredDocuments((prev) => prev.filter((doc) => doc.key !== key));
+      console.log(key);
+      // Trigger ingestion once for all files
+      const ingestResponse = await fetch("/api/ingest", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          documentKeys: key,
+        }),
+      });
+
+      if (!ingestResponse.ok) {
+        const errorText = await ingestResponse.text();
+        console.error("Ingestion API error:", ingestResponse.status, errorText);
+        throw new Error(
+          `Failed to trigger ingestion: ${ingestResponse.status} ${errorText}`
+        );
+      }
+
+      const ingestResult = await ingestResponse.json();
+      console.log("Ingestion started for all files:", ingestResult);
     } catch (error) {
       console.error("Error deleting document:", error);
       alert("Failed to delete document. Please try again.");
@@ -199,12 +221,14 @@ export default function DocumentsTable() {
                     <>No documents found matching &quot;{searchTerm}&quot;</>
                   ) : (
                     <div className="flex flex-col">
-                      <p>No documents found. Upload a document to get started.</p>
                       <p>
-                        Supported formats: pdf, jpeg, jpg, png, doc, docx. Select multiple files.
+                        No documents found. Upload a document to get started.
+                      </p>
+                      <p>
+                        Supported formats: pdf, jpeg, jpg, png, doc, docx.
+                        Select multiple files.
                       </p>
                     </div>
-
                   )}
                 </td>
               </tr>
