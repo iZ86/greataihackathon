@@ -2,11 +2,11 @@ import { BedrockAgentRuntimeClient, InvokeAgentCommand } from "@aws-sdk/client-b
 
 const client = new BedrockAgentRuntimeClient({ region: "us-east-1" });
 
-export async function queryMedicalAgent(question: string) {
+export async function queryMedicalAgent(question: string, sessionId: string) {
   const command = new InvokeAgentCommand({
-    agentId: "C1FVFTYN4U",
-    agentAliasId: "MOGZDO2GZK",
-    sessionId: "12345", // TODO: change with patient ID as session
+    agentId: process.env.AGENT_ID,
+    agentAliasId: process.env.AGENT_ALIAS_ID,
+    sessionId: sessionId,
     inputText: question,
   });
 

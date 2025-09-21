@@ -88,7 +88,9 @@ export default function Sidebar() {
 
   useEffect(() => {
     async function loadSessions() {
-      setIsHistoryLoading(true);
+      // Only load if 0 sessions (to avoid reloading on every open)
+      if (!sessions.length) setIsHistoryLoading(true);
+
       try {
         const res = await client.models.ChatMessage.list();
 
@@ -100,12 +102,13 @@ export default function Sidebar() {
           const sessionId = message.sessionId;
           const createdAt = new Date(message.createdAt as string);
 
-          if (
-            !sessionsMap.has(sessionId) ||
-            createdAt < sessionsMap.get(sessionId)!.timestamp
-          ) {
-            // Only use user messages as the first message
-            if (message.role === "user" && message.message) {
+          // Get the existing session or create a new one
+          const existingSession = sessionsMap.get(sessionId);
+
+          // Update if this message is newer than the existing one
+          if (!existingSession || createdAt > existingSession.timestamp) {
+            // Use the last message (regardless of role)
+            if (message.role == "user" && message.message) {
               sessionsMap.set(sessionId, {
                 sessionId: sessionId,
                 firstMessage: message.message,
@@ -129,19 +132,19 @@ export default function Sidebar() {
     }
 
     if (isOpen) loadSessions();
-  }, [isOpen]);
+  }, [isOpen, sessions]);
 
   return (
     <>
       <DeleteChatHistoryModal openDeleteModal={openDeleteModal} setOpenDeleteModal={setOpenDeleteModal} deleteSession={deleteSession} />
 
       {/* History button */}
-      <div className="shadow-md px-6 py-4 flex items-center justify-between lg:absolute lg:top-20 lg:right-0">
+      <div className="px-6 py-4 flex items-center justify-between lg:absolute lg:top-20 lg:right-0">
         <button
           onClick={() => setIsOpen(true)}
           className="text-gray-800 dark:text-gray-200"
         >
-          <History size={32} className="cursor-e-resize" />
+          <History size={32} className="cursor-w-resize" />
         </button>
       </div>
 
@@ -154,11 +157,11 @@ export default function Sidebar() {
 
       {/* Sidebar Drawer */}
       <aside
-        className={`fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg z-50 transform transition-transform duration-300
+        className={`overflow-y-auto fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg z-50 transform transition-transform duration-300
           ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         {/* Close Button */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-[#101c22]">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
             Chat History
           </h2>
