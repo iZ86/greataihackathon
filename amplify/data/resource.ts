@@ -9,13 +9,6 @@ const schema = a.schema({
     message: a.string(),               // text
     createdAt: a.datetime().required() // timestamp
   }).authorization((allow) => [allow.owner(), allow.publicApiKey()]),
-
-  ChatSession: a.model({
-    sessionId: a.string().required(),      // unique session ID
-    title: a.string(),                     // auto-generated title from first message
-    userId: a.string().required(),         // user who owns the session
-    lastMessageAt: a.datetime().required() // last activity timestamp
-  }).authorization((allow) => [allow.owner(), allow.publicApiKey()])
 });
 
 export type Schema = ClientSchema<typeof schema>;
