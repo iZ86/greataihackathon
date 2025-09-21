@@ -6,7 +6,6 @@ import { Search, X, Trash2, Eye, RefreshCcw } from "lucide-react";
 import UploadFileModal from "@/components/UploadFileModal";
 import { Checkbox } from '@headlessui/react'
 import DeleteFileModal from "./DeleteFileModal";
-import { useRouter } from 'next/navigation';
 
 const ALLOWEDFILETYPES = [".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx"];
 
@@ -17,9 +16,9 @@ interface Document {
   size: number;
 }
 
-function SelectAllFileCheckbox({ selectAllFiles, setSelectAllFiles, numberOfSelectedDocuments, numberOfDocuments
+function SelectAllFileCheckbox({setSelectAllFiles, numberOfSelectedDocuments, numberOfDocuments
 }: {
-  selectAllFiles: boolean, setSelectAllFiles: React.Dispatch<React.SetStateAction<boolean>>, numberOfSelectedDocuments: number, numberOfDocuments: number
+  setSelectAllFiles: React.Dispatch<React.SetStateAction<boolean>>, numberOfSelectedDocuments: number, numberOfDocuments: number
 }) {
   const [enabled, setEnabled] = useState(false);
 
@@ -32,7 +31,7 @@ function SelectAllFileCheckbox({ selectAllFiles, setSelectAllFiles, numberOfSele
     if (numberOfSelectedDocuments === numberOfDocuments && numberOfDocuments !== 0) {
       setEnabled(true);
     }
-  }, [selectAllFiles, numberOfSelectedDocuments, numberOfDocuments]);
+  }, [numberOfSelectedDocuments, numberOfDocuments]);
 
 
 
@@ -79,7 +78,7 @@ function SelectFileCheckbox({ numberOfSelectedDocuments, setNumberOfSelectedDocu
         );
       }
     }
-  }, [selectAllFiles]);
+  }, [selectAllFiles, numberOfSelectedDocuments, numberOfDocuments, documentKey, enabled, setNumberOfSelectedDocuments, setSelectedDocumentKeys]);
 
   return (
 
@@ -109,7 +108,6 @@ function SelectFileCheckbox({ numberOfSelectedDocuments, setNumberOfSelectedDocu
 }
 
 export default function DocumentsTable() {
-  const router = useRouter();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -304,7 +302,7 @@ export default function DocumentsTable() {
           <thead className="bg-gray-50 dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-400 uppercase sticky top-0">
             <tr>
               <th className="px-2 py-3 flex justify-center" scope="col">
-                <SelectAllFileCheckbox selectAllFiles={selectAllFiles} setSelectAllFiles={setSelectAllFiles} numberOfSelectedDocuments={numberOfSelectedDocuments} numberOfDocuments={documents.length} />
+                <SelectAllFileCheckbox setSelectAllFiles={setSelectAllFiles} numberOfSelectedDocuments={numberOfSelectedDocuments} numberOfDocuments={documents.length} />
               </th>
               <th className="px-6 py-3" scope="col">
                 Document Name

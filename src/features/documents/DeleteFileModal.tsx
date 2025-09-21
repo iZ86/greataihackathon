@@ -8,12 +8,9 @@ import {
   Transition,
   TransitionChild,
 } from "@headlessui/react";
-import { CloudUpload, Upload, Loader2, Trash } from "lucide-react";
-import { Fragment, useState, useRef } from "react";
+import { Loader2, Trash } from "lucide-react";
+import { Fragment, useState } from "react";
 
-interface DeleteFile {
-  path: string
-}
 
 export default function DeleteFileModal({
   documentKeys,
@@ -24,14 +21,11 @@ export default function DeleteFileModal({
   
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [files, setFiles] = useState<DeleteFile[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [ingesting, setIngesting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function closeModal() {
     setIsOpen(false);
-    setFiles([]);
     setDeleting(false);
     setIngesting(false);
   }
