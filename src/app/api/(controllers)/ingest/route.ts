@@ -5,12 +5,13 @@ const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID as string;
 const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY as string;
 const KNOWLEDGE_BASE_ID = process.env.KNOWLEDGE_BASE_ID as string;
 const DATA_SOURCE_ID = process.env.DATA_SOURCE_ID as string;
+const REGION = process.env.REGION as string;
 
 export async function POST() {
   try {
     // Initialize Bedrock client
     const client = new BedrockAgentClient({
-      region: 'us-east-1',
+      region: REGION,
       credentials: {
         accessKeyId: ACCESS_KEY_ID,
         secretAccessKey: SECRET_ACCESS_KEY,
