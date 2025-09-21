@@ -5,9 +5,9 @@ const BUCKET_NAME: string = process.env.BUCKET_NAME as string;
 
 export const storage = defineStorage(
   {
-    name: BUCKET_NAME,
+    name: `${BUCKET_NAME}`,
     access: (allow) => ({
-      BUCKET_FOLDER: [
+      [`${BUCKET_FOLDER}/*`]: [
         allow.authenticated.to(['read', 'write', 'delete'])
       ],
     }),
