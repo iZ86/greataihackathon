@@ -18,7 +18,7 @@ export default function DeleteFileModal({
 }: {
   documentKeys: string[],
   onDeleteComplete: () => void,
-  
+
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -47,7 +47,27 @@ export default function DeleteFileModal({
         });
       }
 
+      // Trigger ingestion once for all files
+      const ingestResponse = await fetch("/api/ingest", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          documentKeys: documentKeys,
+        }),
+      });
 
+      if (!ingestResponse.ok) {
+        const errorText = await ingestResponse.text();
+        console.error("Ingestion API error:", ingestResponse.status, errorText);
+        throw new Error(
+          `Failed to trigger ingestion: ${ingestResponse.status} ${errorText}`
+        );
+      }
+
+      const ingestResult = await ingestResponse.json();
+      console.log("Ingestion started for all files:", ingestResult);
 
       onDeleteComplete();
     } catch (error) {
