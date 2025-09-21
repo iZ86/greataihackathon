@@ -5,7 +5,11 @@ export async function POST() {
   try {
     // Initialize Bedrock client
     const client = new BedrockAgentClient({
-      region: 'us-east-1'
+      region: 'us-east-1',
+      credentials: {
+        accessKeyId: 'AKIAX323SOFQLXFSOG4H',
+        secretAccessKey: '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',
+      }
     });
 
     const command = new StartIngestionJobCommand({
