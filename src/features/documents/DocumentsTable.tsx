@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { list, getUrl, remove } from "aws-amplify/storage";
 import { Search, X, Trash2, Eye, RefreshCcw } from "lucide-react";
 import UploadFileModal from "@/components/UploadFileModal";
+import { Checkbox } from '@headlessui/react'
+import DeleteFileModal from "./DeleteFileModal";
 
 const ALLOWEDFILETYPES = [".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx"];
 
@@ -14,12 +16,112 @@ interface Document {
   size: number;
 }
 
+function SelectAllFileCheckbox({setSelectAllFiles, numberOfSelectedDocuments, numberOfDocuments
+}: {
+  setSelectAllFiles: React.Dispatch<React.SetStateAction<boolean>>, numberOfSelectedDocuments: number, numberOfDocuments: number
+}) {
+  const [enabled, setEnabled] = useState(false);
+
+  // selectAllFiles can be set to false by the other SelectFileCheckbox
+  useEffect(() => {
+    if (numberOfSelectedDocuments !== numberOfDocuments && numberOfDocuments !== 0) {
+      setEnabled(false);
+    }
+
+    if (numberOfSelectedDocuments === numberOfDocuments && numberOfDocuments !== 0) {
+      setEnabled(true);
+    }
+  }, [numberOfSelectedDocuments, numberOfDocuments]);
+
+
+
+  return (
+    <Checkbox
+      checked={enabled}
+      onChange={() => {
+        // old value for enable.
+        // If it is GOING TO BE DISABLED.
+        if (enabled) {
+          setSelectAllFiles(false);
+          setEnabled(false);
+        } else {
+          setSelectAllFiles(true);
+        }
+      }}
+      className={`${enabled || numberOfSelectedDocuments > 0 ? 'opacity-100' : 'opacity-0 hover:opacity-150'} ${numberOfDocuments === 0 ? "hidden" : undefined} transition-opacity duration-50 cursor-pointer group block size-4 rounded-lg border-2 bg-white data-checked:bg-blue-700`}
+    >
+    </Checkbox>
+  );
+
+}
+
+function SelectFileCheckbox({ numberOfSelectedDocuments, setNumberOfSelectedDocuments, selectAllFiles, setSelectAllFiles, setSelectedDocumentKeys, documentKey, numberOfDocuments
+
+}: {
+  numberOfSelectedDocuments: number, setNumberOfSelectedDocuments: React.Dispatch<React.SetStateAction<number>>, selectAllFiles: boolean, setSelectAllFiles: React.Dispatch<React.SetStateAction<boolean>>, setSelectedDocumentKeys: React.Dispatch<React.SetStateAction<string[]>>, documentKey: string, numberOfDocuments: number
+}) {
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    if (selectAllFiles) {
+      if (!enabled) {
+        setEnabled(true);
+        setNumberOfSelectedDocuments(prev => prev + 1);
+        setSelectedDocumentKeys(prev => prev.includes(documentKey) ? prev : [...prev, documentKey]);
+
+      }
+    } else if (!selectAllFiles && numberOfSelectedDocuments === numberOfDocuments) {
+      if (enabled) {
+        setEnabled(false);
+        setNumberOfSelectedDocuments(prev => prev - 1);
+        setSelectedDocumentKeys(prev =>
+          prev.filter(key => key !== documentKey)
+        );
+      }
+    }
+  }, [selectAllFiles, numberOfSelectedDocuments, numberOfDocuments, documentKey, enabled, setNumberOfSelectedDocuments, setSelectedDocumentKeys]);
+
+  return (
+
+    <Checkbox
+      checked={enabled}
+      onChange={() => {
+        if (enabled) {
+          setEnabled(false);
+          setNumberOfSelectedDocuments(prev => prev - 1);
+
+          setSelectAllFiles(false);
+          setSelectedDocumentKeys(prev =>
+            prev.filter(key => key !== documentKey)
+          );
+
+        } else {
+          setEnabled(true);
+          setNumberOfSelectedDocuments(prev => prev + 1);
+          setSelectedDocumentKeys(prev => prev.includes(documentKey) ? prev : [...prev, documentKey]);
+        }
+      }}
+      className={`${enabled || numberOfSelectedDocuments > 0 ? 'opacity-100' : 'opacity-0 hover:opacity-150'} transition-opacity duration-50 cursor-pointer group block size-4 rounded-lg border-2 bg-white data-checked:bg-blue-700`}
+    >
+    </Checkbox>
+
+  );
+}
+
 export default function DocumentsTable() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [selectAllFiles, setSelectAllFiles] = useState(false);
+  const [numberOfSelectedDocuments, setNumberOfSelectedDocuments] = useState(0);
+  const [selectedDocumentKeys, setSelectedDocumentKeys] = useState<string[]>([]);
+
+  async function onDeleteComplete() {
+    setSelectedDocumentKeys([]);
+    setNumberOfSelectedDocuments(0);
+    getDocuments();
+  }
 
   async function getDocuments() {
     try {
@@ -46,6 +148,7 @@ export default function DocumentsTable() {
 
       setDocuments(documents);
       setFilteredDocuments(documents);
+      setSelectAllFiles(false);
     } catch (error) {
       console.error("Error fetching documents:", error);
     } finally {
@@ -154,7 +257,8 @@ export default function DocumentsTable() {
         <div className="justify-end flex">
           <div className="mt-4 flex justify-end gap-6">
             {/* Upload button */}
-            <UploadFileModal onUploadComplete={getDocuments} />
+            {numberOfSelectedDocuments > 0 ? <DeleteFileModal onDeleteComplete={onDeleteComplete} documentKeys={selectedDocumentKeys} /> :
+              <UploadFileModal onUploadComplete={getDocuments} />}
             {/* Refresh button */}
             <button
               onClick={getDocuments}
@@ -191,11 +295,15 @@ export default function DocumentsTable() {
           </div>
         </div>
       </div>
-
+      {numberOfSelectedDocuments > 0 ? <p>{numberOfSelectedDocuments} files selected</p> : undefined}
       <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200/50 dark:border-gray-700/50 max-h-[400px]">
+
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-400 uppercase sticky top-0">
             <tr>
+              <th className="px-2 py-3 flex justify-center" scope="col">
+                <SelectAllFileCheckbox setSelectAllFiles={setSelectAllFiles} numberOfSelectedDocuments={numberOfSelectedDocuments} numberOfDocuments={documents.length} />
+              </th>
               <th className="px-6 py-3" scope="col">
                 Document Name
               </th>
@@ -238,6 +346,9 @@ export default function DocumentsTable() {
                   key={document.key}
                   className="border-b border-gray-200 dark:border-gray-700/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30"
                 >
+                  <th className="px-2 py-3 flex justify-center" scope="col">
+                    <SelectFileCheckbox documentKey={document.key} setSelectedDocumentKeys={setSelectedDocumentKeys} numberOfSelectedDocuments={numberOfSelectedDocuments} setNumberOfSelectedDocuments={setNumberOfSelectedDocuments} selectAllFiles={selectAllFiles} setSelectAllFiles={setSelectAllFiles} numberOfDocuments={documents.length} />
+                  </th>
                   <th
                     className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white max-w-xs truncate"
                     scope="row"
