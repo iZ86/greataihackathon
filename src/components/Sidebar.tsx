@@ -4,16 +4,15 @@ import Link from "next/link";
 import { Menu, SquarePen, X } from "lucide-react"; // hamburger & close icons
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { generateSessionId } from "@/utils/session";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 
 export default function Sidebar({ page }: { page: string }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, signOut } = useAuthenticator((context) => [context.user]);
+  const { signOut } = useAuthenticator((context) => [context.user]);
   const router = useRouter();
 
   function handleNewChat() {
-    router.push("/chat/");
+    router.replace("/chat/");
   }
 
   return (
