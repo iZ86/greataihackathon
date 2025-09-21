@@ -21,7 +21,13 @@ const bedrockRuntimeClient = new BedrockRuntimeClient({
     secretAccessKey: "GhSz8X8X8eIOaFLzF+E1/PH/L9ck7Nu3BstkxptT",
   }
 });
-const s3Client = new S3Client({ region: "us-east-1" });
+const s3Client = new S3Client({
+  region: "us-east-1",
+  credentials: {
+    accessKeyId: "AKIAX323SOFQLXFSOG4H",
+    secretAccessKey: "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",
+  }
+});
 
 interface KnowledgeBaseResponse {
   answer: string;
