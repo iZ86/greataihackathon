@@ -3,6 +3,7 @@
 import { Loader2, Send } from "lucide-react";
 import { CircleStop, Bot, Sparkles } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "../../amplify/data/resource";
 import { Amplify } from "aws-amplify";
@@ -17,7 +18,12 @@ interface Message {
   timestamp: Date;
 }
 
-export default function ChatArea({ sessionId }: { sessionId?: string }) {
+export default function ChatArea({
+  sessionId, isNewSession
+}: {
+  sessionId?: string;
+  isNewSession?: boolean;
+}) {
   const [isLoading, setIsLoading] = useState(false);
   const [isPreviousChatLoading, setIsPreviousChatLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,6 +32,7 @@ export default function ChatArea({ sessionId }: { sessionId?: string }) {
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(
     sessionId
   );
+  const router = useRouter();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -36,6 +43,11 @@ export default function ChatArea({ sessionId }: { sessionId?: string }) {
   }, [messages, isLoading]);
 
   useEffect(() => {
+    if (isNewSession && sessionId) {
+      setCurrentSessionId(sessionId);
+      return;
+    }
+
     // Clear messages when sessionId changes to prevent showing wrong messages
     if (sessionId !== currentSessionId) {
       setMessages([]);
@@ -50,7 +62,6 @@ export default function ChatArea({ sessionId }: { sessionId?: string }) {
         // First check if the session exists in the database
         const { data } = await client.models.ChatMessage.list({
           filter: { sessionId: { eq: sessionId } },
-          limit: 2, // Only need to check if at least 2 message exists
         });
 
         // If session exists, load the full chat history
@@ -70,7 +81,7 @@ export default function ChatArea({ sessionId }: { sessionId?: string }) {
     }
 
     checkAndLoadSession();
-  }, [sessionId, currentSessionId]); // Added currentSessionId to dependency array
+  }, [sessionId, currentSessionId, router]); // Added currentSessionId to dependency array
 
   async function sendMessage() {
     if (!input.trim() || isLoading) return;
@@ -93,7 +104,7 @@ export default function ChatArea({ sessionId }: { sessionId?: string }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ question: currentInput }),
+        body: JSON.stringify({ question: currentInput, sessionId }),
       });
       const data = await res.json();
 
@@ -126,7 +137,7 @@ export default function ChatArea({ sessionId }: { sessionId?: string }) {
     message: string
   ) {
     try {
-      const test = await client.models.ChatMessage.create({
+      await client.models.ChatMessage.create({
         sessionId,
         role,
         message,
@@ -142,7 +153,7 @@ export default function ChatArea({ sessionId }: { sessionId?: string }) {
       const { data: messages } = await client.models.ChatMessage.list({
         filter: { sessionId: { eq: sessionId } },
       });
-      
+
       return messages
         .filter((msg) => msg.message !== null && msg.message !== undefined)
         .map((msg) => ({
