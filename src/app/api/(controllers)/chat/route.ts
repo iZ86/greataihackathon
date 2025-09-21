@@ -4,32 +4,24 @@ import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-r
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID as string;
-const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY as string;
-const KNOWLEDGE_BASE_ID = process.env.KNOWLEDGE_BASE_ID as string;
-const DATA_SOURCE_ID = process.env.DATA_SOURCE_ID as string;
-const REGION = process.env.REGION as string;
-const GUARDRAIL_ID = process.env.GUARDRAIL_ID as string;
-const GUARDRAIL_VERSION = process.env.GUARDRAIL_VERSION as string;
-const MODEL_ID = process.env.MODEL_ID as string;
-const MODEL_ARN = process.env.MODEL_ARN as string;
+
 
 // Initialize clients
 const bedrockAgentClient = new BedrockAgentRuntimeClient({
-  region: REGION,
+  region: "us-east-1",
   credentials: {
-    accessKeyId: ACCESS_KEY_ID,
-    secretAccessKey: SECRET_ACCESS_KEY,
+    accessKeyId: "AKIAX323SOFQLXFSOG4H",
+    secretAccessKey: "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",
   }
 });
 const bedrockRuntimeClient = new BedrockRuntimeClient({
-  region: REGION,
+  region: "us-east-1",
   credentials: {
-    accessKeyId: ACCESS_KEY_ID,
-    secretAccessKey: SECRET_ACCESS_KEY,
+    accessKeyId: "AKIAX323SOFQLXFSOG4H",
+    secretAccessKey: "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",
   }
 });
-const s3Client = new S3Client({ region: REGION });
+const s3Client = new S3Client({ region: "us-east-1" });
 
 interface KnowledgeBaseResponse {
   answer: string;
@@ -65,7 +57,7 @@ async function generatePresignedUrl(s3Uri: string): Promise<string> {
 async function checkWithGuardrail(content: string): Promise<{ blocked: boolean; reason?: string } | undefined> {
   try {
     const command = new ConverseCommand({
-      modelId: MODEL_ID,
+      modelId: "amazon.nova-pro-v1:0",
       messages: [
         {
           role: "user",
@@ -73,8 +65,8 @@ async function checkWithGuardrail(content: string): Promise<{ blocked: boolean; 
         }
       ],
       guardrailConfig: {
-        guardrailIdentifier: GUARDRAIL_ID,
-        guardrailVersion: GUARDRAIL_VERSION
+        guardrailIdentifier: "6pv7p3nihjun",
+        guardrailVersion: "DRAFT"
       },
       inferenceConfig: {
         maxTokens: 100
@@ -137,12 +129,12 @@ export async function POST(request: NextRequest): Promise<NextResponse | undefin
       retrieveAndGenerateConfiguration: {
         type: "KNOWLEDGE_BASE" as const,
         knowledgeBaseConfiguration: {
-          knowledgeBaseId: KNOWLEDGE_BASE_ID,
-          modelArn: MODEL_ARN,
+          knowledgeBaseId: "FD7BZIWC56",
+          modelArn: "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0",
           // Add guardrail configuration here
           guardrailConfiguration: {
-            guardrailId: GUARDRAIL_ID,
-            guardrailVersion: GUARDRAIL_VERSION
+            guardrailId: "6pv7p3nihjun",
+            guardrailVersion: "DRAFT"
           }
         }
       }
